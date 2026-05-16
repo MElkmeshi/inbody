@@ -26,15 +26,26 @@ async function fetchTelegramFile(ctx: Context, fileId: string): Promise<Buffer> 
 }
 
 async function handleImage(ctx: Context, image: Buffer, mime = "image/jpeg") {
-  await ctx.sendChatAction("upload_photo");
-  const scan = await extractScan(image, mime);
-  const url = buildPayload(scan);
-  const png = await renderQrPng(url);
-  const safeUrl = url.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  await ctx.replyWithPhoto(Input.fromBuffer(png, "inbody-qr.png"), {
-    caption: `<a href="${safeUrl}">Click here to open in InBody</a>`,
-    parse_mode: "HTML",
-  });
+  // Show "typing" while reading the scan so it feels like the bot is actually
+  // looking at it. Telegram clears the indicator after ~5s, so refresh it.
+  await ctx.sendChatAction("typing");
+  const typingTimer = setInterval(() => {
+    ctx.sendChatAction("typing").catch(() => {});
+  }, 4000);
+
+  try {
+    const scan = await extractScan(image, mime);
+    const url = buildPayload(scan);
+    const png = await renderQrPng(url);
+    await ctx.sendChatAction("upload_photo");
+    const safeUrl = url.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    await ctx.replyWithPhoto(Input.fromBuffer(png, "inbody-qr.png"), {
+      caption: `<a href="${safeUrl}">Click here to open in InBody</a>`,
+      parse_mode: "HTML",
+    });
+  } finally {
+    clearInterval(typingTimer);
+  }
 }
 
 bot.on(message("photo"), async (ctx) => {
