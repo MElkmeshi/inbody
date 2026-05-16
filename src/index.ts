@@ -50,13 +50,14 @@ bot.on(message("photo"), async (ctx) => {
 
 bot.on(message("document"), async (ctx) => {
   const doc = ctx.message.document;
-  if (!doc.mime_type?.startsWith("image/")) {
-    await ctx.reply("Please send an image (photo or image file).");
+  const mime = doc.mime_type ?? "";
+  if (!mime.startsWith("image/") && mime !== "application/pdf") {
+    await ctx.reply("Please send an image or PDF.");
     return;
   }
   try {
     const buf = await fetchTelegramFile(ctx, doc.file_id);
-    await handleImage(ctx, buf, doc.mime_type);
+    await handleImage(ctx, buf, mime);
   } catch (err) {
     console.error(err);
     await ctx.reply(`Couldn't read this scan: ${(err as Error).message}`);
