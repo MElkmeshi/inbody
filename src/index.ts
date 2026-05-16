@@ -30,7 +30,11 @@ async function handleImage(ctx: Context, image: Buffer, mime = "image/jpeg") {
   const scan = await extractScan(image, mime);
   const url = buildPayload(scan);
   const png = await renderQrPng(url);
-  await ctx.replyWithPhoto(Input.fromBuffer(png, "inbody-qr.png"), { caption: url });
+  const safeUrl = url.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  await ctx.replyWithPhoto(Input.fromBuffer(png, "inbody-qr.png"), {
+    caption: `<a href="${safeUrl}">Click here to open in InBody</a>`,
+    parse_mode: "HTML",
+  });
 }
 
 bot.on(message("photo"), async (ctx) => {
