@@ -45,26 +45,26 @@ const ScanSchema = z.object({
   muscle_control_kg: z.number(),
 });
 
-export async function extractScan(data: Buffer, mime: string = "image/jpeg"): Promise<ScanData> {
+export async function extractScan(
+  data: Buffer,
+  mime: string = "image/jpeg",
+): Promise<ScanData> {
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.GEMINI_API_KEY) {
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = process.env.GEMINI_API_KEY;
   }
 
   const part = mime.startsWith("image/")
     ? { type: "image" as const, image: data, mimeType: mime }
-    : { type: "file"  as const, data,        mimeType: mime };
+    : { type: "file" as const, data, mimeType: mime };
 
   const { object } = await generateObject({
-    model: google("gemini-2.5-flash"),
+    model: google("gemini-3.5-flash"),
     schema: ScanSchema,
     temperature: 0,
     messages: [
       {
         role: "user",
-        content: [
-          { type: "text", text: PROMPT },
-          part,
-        ],
+        content: [{ type: "text", text: PROMPT }, part],
       },
     ],
   });
